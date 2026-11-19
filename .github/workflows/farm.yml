@@ -12,10 +12,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_TOKEN }}
+      - run: echo "RUNNER_IP=$(curl -s https://api.ipify.org)"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: echo runner_ip: R.168.74.65
       - run: pip install requests
       - run: python farm_loop.py
         env:
