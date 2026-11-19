@@ -1,15 +1,17 @@
 name: farm-bot
 on:
+  schedule:
+    - cron: '* * * * *'
   workflow_dispatch:
-  push:
-    branches: [main]
 
 jobs:
   farm:
     runs-on: ubuntu-latest
-    timeout-minutes: 23
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -18,3 +20,14 @@ jobs:
         env:
           BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
           BINANCE_API_SECRET: ${{ secrets.BINANCE_API_SECRET }}
+      - name: save state to repo
+        if: always()
+        run: |
+          SHA=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/contents/state.json \
+            | python -c "import sys,json; print(json.load(sys.stdin).get('sha',''))")
+          B64=$(base64 -w0 state.json)
+          curl -s -X PUT -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"message\":\"state\",\"content\":\"$B64\",\"sha\":\"$SHA\"}" \
+            https://api.github.com/repos/${{ github.repository }}/contents/state.json
